@@ -1,13 +1,6 @@
-import Vue from 'vue'
-import App from './App.vue'
-import axios from 'axios';
-import VueAxios from 'vue-axios';
+import { createApp } from "vue";
+import axios from "axios";
+import VueAxios from "vue-axios";
+import App from "./App.vue";
 
-Vue.config.productionTip = false
-Vue.use(VueAxios, axios);
-
-new Vue({
-    el: '#app',
-    components: { App },
-    template: '<App/>',
-});
+createApp(App).mount("#app");
