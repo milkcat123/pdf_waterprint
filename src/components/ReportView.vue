@@ -10,17 +10,23 @@
     />
   </div>
   <hr />
-  <div>
-    文件資訊:
-    尺寸: 寬(x):{{original.width}} & 高(y):{{ original.height }}
-  </div>
+  <div>文件資訊: 寬(x):{{ original.width }} & 高(y):{{ original.height }}</div>
   <div>
     浮水印文字:
-    <input type="text" v-model="waterprintText" placeholder="輸入浮水印文字" />
+    <input
+      type="text"
+      v-model="waterprintText"
+      placeholder="輸入浮水印文字"
+      maxlength="100"
+    />
   </div>
   <div>
     文字尺寸:
     <input type="number" v-model="textSize" step="1" min="10" max="120" />
+  </div>
+  <div>
+    文字顏色:
+    <input type="color" v-model="pickColor" @change="getColor($event)" />
   </div>
   <div>
     文字起始水平位置(x軸):
@@ -60,7 +66,8 @@ export default {
       xPosition: 0,
       yPosition: 0,
       rotateDegree: 10,
-      original: { width: 0, height: 0 },
+      pickColor: "#ff0000",
+      original: { width: 0, height: 0, color: {} },
       newPdfName: "waterprint_sample",
       pdfBytes: null,
       renderPDF_bool: false,
@@ -69,8 +76,22 @@ export default {
   },
   methods: {
     getFile(e) {
+      //   console.log("get file", e.target.files);
       v_getFile = e.target.files[0];
       this.getPending = false;
+    },
+    getColor(e) {
+      const val = e.target.value;
+      // 改成16進位再除以255
+      this.original.color = {
+        r: this.transferToRgb(val, 1),
+        g: this.transferToRgb(val, 3),
+        b: this.transferToRgb(val, 5),
+      };
+      console.log("get color", e.target.value, this.original.color);
+    },
+    transferToRgb(n, start) {
+      return parseInt(n.substr(start, 2), 16) / 255;
     },
     getReaderFile() {
       const reader = new FileReader();
@@ -88,19 +109,24 @@ export default {
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
       const pages = pdfDoc.getPages();
-      //todo: 增加為每一頁都要同樣的浮水印
+      const { r, g, b } = this.original.color;
+
       const firstPage = pages[0];
       const { width, height } = firstPage.getSize();
       this.original.width = width;
       this.original.height = height;
 
-      firstPage.drawText(this.waterprintText, {
+      const drawOption = {
         x: this.xPosition,
         y: this.yPosition,
         size: this.textSize,
         font: helveticaFont,
-        color: rgb(0.95, 0.1, 0.1),
+        color: rgb(r, g, b),
         rotate: degrees(this.rotateDegree),
+      };
+      //增加為每一頁都要同樣的浮水印
+      pages.forEach((item) => {
+        item.drawText(this.waterprintText, drawOption);
       });
 
       this.pdfBytes = await pdfDoc.save();
@@ -146,7 +172,10 @@ button {
 input {
   line-height: 2;
   width: 350px;
-  &[type="number"]{
+  &[type="number"] {
+    width: 60px;
+  }
+  &[type="color"] {
     width: 60px;
   }
 }
