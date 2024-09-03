@@ -9,84 +9,60 @@
       @change="getFile($event)"
     />
   </div>
+  <hr />
+  <div>
+    文件資訊:
+    尺寸: 寬(x):{{original.width}} & 高(y):{{ original.height }}
+  </div>
   <div>
     浮水印文字:
     <input type="text" v-model="waterprintText" placeholder="輸入浮水印文字" />
   </div>
-  <hr />
   <div>
-    <button @click="showPDF()" :disabled="getPending">顯示帶浮水印的PDF</button>
+    文字尺寸:
+    <input type="number" v-model="textSize" step="1" min="10" max="120" />
+  </div>
+  <div>
+    文字起始水平位置(x軸):
+    <input type="number" v-model="xPosition" step="1" min="0" max="500" />
+  </div>
+  <div>
+    文字垂直位置(y軸):
+    <input type="number" v-model="yPosition" step="1" min="0" max="999" />
+  </div>
+  <div>
+    旋轉角度:
+    <input type="number" v-model="rotateDegree" step="1" min="-180" max="180" />
+  </div>
+  <div>
+    <button @click="modifyPDF()" :disabled="getPending">
+      顯示帶浮水印的PDF
+    </button>
     <div class="pdfarea">
       <p v-show="!renderPDF_bool">預覽位置</p>
       <!-- PDF area -->
       <div v-show="renderPDF_bool" class="pdfwrap">
-        <div class="canvas_wrap">
-          <canvas id="report_content" frameborder="0"></canvas>
-        </div>
-        <div class="operate_row">
-          <button
-            :class="['arrow_btn', { active: prevActive }]"
-            :disabled="pageNum <= 1"
-            id="prev"
-            @click="onPrevPage()"
-          >
-            <i class="bi bi-caret-left-fill"></i>
-          </button>
-          <span>
-            頁數:
-            <span id="page_num">{{ pageNum }}</span>
-            /
-            <span id="page_count">{{ totalPage }}</span>
-          </span>
-          <button
-            :class="['arrow_btn', { active: nextActive }]"
-            :disabled="pageNum >= totalPage"
-            id="next"
-            @click="onNextPage()"
-          >
-            <i class="bi bi-caret-right-fill"></i>
-          </button>
-        </div>
+        <iframe frameborder="1" id="pdf"></iframe>
       </div>
     </div>
-  </div>
-  <hr />
-  <div>
-    命名此PDF:
-    <input type="text" v-model="newPdfName" placeholder="輸入檔案名稱" />
-    <br />
-    <button @click="dowloadPDF()" :disabled="getPending">下載此PDF</button>
   </div>
 </template>
 <script>
 import { degrees, PDFDocument, StandardFonts, rgb } from "pdf-lib";
-
-let DowloadJS = require("downloadjs");
-// const PDFJS = require("pdfjs-dist");
-import * as PDFJS from "pdfjs-dist";
-PDFJS.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
-// PDFJS.GlobalWorkerOptions.workerSrc =
-//   "//mozilla.github.io/pdf.js/build/pdf.worker.js";
-
-let v_pdfDoc = null;
 let v_getFile;
 
 export default {
   name: "ReportView",
   data() {
     return {
-      //   pdfUrl: "",
       waterprintText: "waterprint waterprint waterprint",
+      textSize: 50,
+      xPosition: 0,
+      yPosition: 0,
+      rotateDegree: 10,
+      original: { width: 0, height: 0 },
       newPdfName: "waterprint_sample",
       pdfBytes: null,
-      pageNum: 1,
-      totalPage: 1,
-      modalStatus: false,
-      pageRendering: false,
-      pageNumPending: null,
-      prevActive: false,
-      nextActive: false,
-      pdfScale: 0.8,
       renderPDF_bool: false,
       getPending: true,
     };
@@ -94,16 +70,9 @@ export default {
   methods: {
     getFile(e) {
       v_getFile = e.target.files[0];
-      this.modifyPDF();
       this.getPending = false;
     },
     getReaderFile() {
-      //   let existingPdfBytes = await this.axios
-      //     .get(this.pdfUrl, { responseType: "blob" })
-      //     .then((res) => {
-      //       console.log("pdfUrl", res);
-      //       return res.data.arrayBuffer();
-      //     });
       const reader = new FileReader();
       return new Promise((resolve, reject) => {
         reader.onload = () => {
@@ -122,125 +91,27 @@ export default {
       //todo: 增加為每一頁都要同樣的浮水印
       const firstPage = pages[0];
       const { width, height } = firstPage.getSize();
+      this.original.width = width;
+      this.original.height = height;
+
       firstPage.drawText(this.waterprintText, {
-        x: 3,
-        y: height / 2,
-        size: 50,
+        x: this.xPosition,
+        y: this.yPosition,
+        size: this.textSize,
         font: helveticaFont,
         color: rgb(0.95, 0.1, 0.1),
-        rotate: degrees(5),
+        rotate: degrees(this.rotateDegree),
       });
 
       this.pdfBytes = await pdfDoc.save();
 
+      const bytes = new Uint8Array(this.pdfBytes);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const docUrl = URL.createObjectURL(blob);
+      document.getElementById("pdf").src = docUrl;
+
       console.log("pdfBytes", this.pdfBytes);
-    },
-    async showPDF() {
-      this.pageNum = 1;
-      this.totalPage = 1;
-      this.prevActive = false;
-      this.nextActive = false;
-
-      let vm = this;
-      let pdfObj = { data: this.pdfBytes };
-      //   PDFJS.disableWorker = true;
-
-      await PDFJS.getDocument(pdfObj)
-        .promise.then(function (pdfDoc_) {
-          console.log("getDocument", pdfDoc_);
-
-          v_pdfDoc = pdfDoc_;
-
-          vm.totalPage = pdfDoc_.numPages;
-          vm.renderPage(v_pdfDoc, vm.pageNum);
-
-          if (vm.totalPage > 1) {
-            vm.nextActive = true;
-          }
-          vm.renderPDF_bool = true;
-        })
-        .catch((err) => {
-          console.error("pdf get doc", err);
-          this.isError = true;
-        });
-    },
-    async dowloadPDF() {
-      if (this.newPdfName.length === 0) {
-        return;
-      }
-      await this.modifyPDF();
-      await DowloadJS(
-        this.pdfBytes,
-        `${this.newPdfName}.pdf`,
-        "application/pdf"
-      );
-    },
-    async renderPage(pdfDoc, num) {
-      let vm = this;
-
-      this.pageRendering = true;
-
-      await pdfDoc
-        .getPage(num)
-        .then(function (page) {
-          console.log("getPage", page);
-
-          let canvas = document.getElementById("report_content");
-          let context = canvas.getContext("2d");
-          let viewport = page.getViewport({ scale: vm.pdfScale });
-
-          console.log("viewport", viewport);
-
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-          //預設大小
-          // canvas.height = 792;
-          // canvas.width = 612;
-
-          let renderContext = {
-            canvasContext: context,
-            viewport: viewport,
-          };
-
-          let renderTask = page.render(renderContext);
-
-          renderTask.promise
-            .then(function (res) {
-              console.log("renderTask", res);
-
-              vm.pageRendering = false;
-
-              if (vm.pageNumPending !== null) {
-                vm.renderPage(vm.pageNumPending);
-
-                vm.pageNumPending = null;
-              }
-            })
-            .catch((err) => {
-              console.error("PDFJS.getDocument failed:", err);
-            });
-        })
-        .catch((err) => {
-          this.isError = true;
-          console.error("getPage failed:", err);
-        });
-    },
-    queueRenderPage(num) {
-      if (this.pageRendering) {
-        this.pageNumPending = num;
-      } else {
-        this.renderPage(v_pdfDoc, num);
-      }
-    },
-    onPrevPage() {
-      // 上一頁
-      this.pageNum--;
-      this.queueRenderPage(this.pageNum);
-    },
-    onNextPage() {
-      // 下一頁
-      this.pageNum++;
-      this.queueRenderPage(this.pageNum);
+      this.renderPDF_bool = true;
     },
   },
 };
@@ -253,9 +124,9 @@ button {
 .pdfarea {
   width: 60vw;
   text-align: center;
-  min-width: 400px;
-  min-height: 150px;
-  padding: 0px;
+  min-width: 425px;
+  min-height: 200px;
+  padding: 20px;
   max-height: unset;
   background: #f5f5f5;
   margin: 20px 0px;
@@ -264,41 +135,19 @@ button {
     line-height: 150px;
   }
 }
-iframe {
-  height: 100%;
-}
-.pdfwrap {
+#pdf {
+  width: 100%;
+  height: 600px;
 }
 .canvas_wrap {
   overflow-y: auto;
   padding-top: 20px;
 }
-.operate_row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px 0;
-  span {
-    font-weight: bold;
-    font-size: 20px;
-  }
-}
-button.arrow_btn {
-  width: 50px;
-  margin: 0 10px;
-  padding: 4px 0px;
-  background: none;
-  border: none;
-  cursor: auto;
-}
-canvas {
-  border: 1px solid #000;
-}
-#page_num {
-  color: #000;
-}
 input {
   line-height: 2;
   width: 350px;
+  &[type="number"]{
+    width: 60px;
+  }
 }
 </style>
