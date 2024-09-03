@@ -98,6 +98,12 @@ export default {
       this.getPending = false;
     },
     getReaderFile() {
+      //   let existingPdfBytes = await this.axios
+      //     .get(this.pdfUrl, { responseType: "blob" })
+      //     .then((res) => {
+      //       console.log("pdfUrl", res);
+      //       return res.data.arrayBuffer();
+      //     });
       const reader = new FileReader();
       return new Promise((resolve, reject) => {
         reader.onload = () => {
@@ -108,17 +114,12 @@ export default {
       });
     },
     async modifyPDF() {
-      //   let existingPdfBytes = await this.axios
-      //     .get(this.pdfUrl, { responseType: "blob" })
-      //     .then((res) => {
-      //       console.log("pdfUrl", res);
-      //       return res.data.arrayBuffer();
-      //     });
       const _file = await this.getReaderFile();
       const pdfDoc = await PDFDocument.load(_file);
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
       const pages = pdfDoc.getPages();
+      //todo: 增加為每一頁都要同樣的浮水印
       const firstPage = pages[0];
       const { width, height } = firstPage.getSize();
       firstPage.drawText(this.waterprintText, {
