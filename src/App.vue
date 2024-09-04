@@ -139,6 +139,7 @@ import { degrees, PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 
 let v_getFile;
+let v_fontBytes;
 
 export default {
   name: "App",
@@ -163,6 +164,11 @@ export default {
       getFileLoading: true,
       loadingPdf: false,
     };
+  },
+  async created(){
+    const _publicPath = process.env.NODE_ENV === "production" ? "/pdf_waterprint" : "";
+    v_fontBytes = await fetch(`${_publicPath}/font/NotoSansTC.otf`).then((res) => res.arrayBuffer());
+
   },
   methods: {
     async getFile(e) {
@@ -214,9 +220,7 @@ export default {
       //   const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
       //custom font
       pdfDoc.registerFontkit(fontkit);
-      const _publicPath = process.env.NODE_ENV === "production" ? "/pdf_waterprint" : "";
-      const customFont = await fetch(`${_publicPath}/font/NotoSansTC.otf`).then((res) => res.arrayBuffer());
-      const helveticaFont = await pdfDoc.embedFont(customFont);
+      const customFont = await pdfDoc.embedFont(v_fontBytes);
 
       const pages = pdfDoc.getPages();
 
@@ -225,7 +229,7 @@ export default {
         x: this.xPosition,
         y: this.yPosition,
         size: this.textSize,
-        font: helveticaFont,
+        font: customFont,
         color: rgb(r, g, b),
         rotate: degrees(this.rotateDegree),
       };
