@@ -250,7 +250,7 @@ export default {
 }
 h1 {
   color: #925e47;
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 900;
   margin-bottom: 6px;
 }
@@ -300,6 +300,7 @@ h1 {
     z-index: 5;
     .row {
       display: flex;
+      align-items: center;
       padding: 4px 0px;
       @include portrait {
         flex-wrap: wrap;
@@ -325,6 +326,9 @@ h1 {
         width: 100%;
         margin: 0px 12px 0px 4px;
         background: #fff;
+        padding: 0px 4px;
+        line-height: 1.5;
+        border: #ff823ec4 1px solid;
         @include portrait {
           margin: 0px;
         }
