@@ -1,0 +1,27 @@
+$main_color: #925e47;
+$second_color: #ff884a;
+
+//rwd
+@mixin pad {
+    @media (max-width: 1024px) {
+        @content;
+    }
+}
+
+@mixin portrait {
+    @media (max-width: 768px) {
+        @content;
+    }
+}
+
+@mixin mobile {
+    @media (max-width: 426px) {
+        @content;
+    }
+}
+
+@mixin minimum {
+    @media (max-width: 376px) {
+        @content;
+    }
+}
