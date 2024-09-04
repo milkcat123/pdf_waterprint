@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <div class="left_side">
-      <h1>PDF增加浮水印工具</h1>
+      <h1>PDF浮水印工具</h1>
 
       <div class="card bg_1">
         <div class="wrap_step">
@@ -34,7 +34,7 @@
         </div>
         <div class="card_title">
           <h2>文件資訊</h2>
-          <div class="sub">waterprint setting</div>
+          <div class="sub">document info</div>
         </div>
         <div class="content">
           <div class="row">
@@ -83,11 +83,7 @@
               max="120"
             />
             <span>顏色：</span>
-            <input
-              type="color"
-              v-model="pickColor"
-              @change="getColor($event)"
-            />
+            <input type="color" v-model="pickColor" @change="getColor()" />
             <span>旋轉角度：</span>
             <input
               type="number"
@@ -105,7 +101,7 @@
               v-model="xPosition"
               step="1"
               min="0"
-              max="500"
+              :max="original.xMax"
             />
             <span>垂直(y軸)：</span>
             <input
@@ -113,7 +109,7 @@
               v-model="yPosition"
               step="1"
               min="0"
-              max="999"
+              :max="original.yMax"
             />
           </div>
         </div>
@@ -140,7 +136,6 @@
 
 <script>
 import { degrees, PDFDocument, StandardFonts, rgb } from "pdf-lib";
-let v_pdfDoc;
 let v_getFile;
 
 export default {
@@ -153,6 +148,8 @@ export default {
         height: 0,
         color: { r: 1, g: 0, b: 0 },
         totalPages: 0,
+        xMax: 10,
+        yMax: 10,
       },
       waterprintText: "waterprint waterprint waterprint",
       textSize: 50,
@@ -173,26 +170,28 @@ export default {
       this.original.name = v_getFile.name;
 
       const _file = await this.getReaderFile();
-      v_pdfDoc = await PDFDocument.load(_file);
+      const pdfDoc = await PDFDocument.load(_file);
 
-      const pages = v_pdfDoc.getPages();
+      const pages = pdfDoc.getPages();
       const firstPage = pages[0];
       const { width, height } = firstPage.getSize();
       this.original.width = width;
       this.original.height = height;
       this.original.totalPages = pages.length;
-
+      this.original.xMax = Math.ceil(width);
+      this.original.yMax = Math.ceil(height);
+        console.log(this.original);
       this.getFileLoading = false;
     },
-    getColor(e) {
-      const val = e.target.value;
+    getColor() {
+      const val = this.pickColor;
       // 改成16進位再除以255
       this.original.color = {
         r: this.transferToRgb(val, 1),
         g: this.transferToRgb(val, 3),
         b: this.transferToRgb(val, 5),
       };
-      console.log("get color", e.target.value, this.original.color);
+      console.log("get color", this.original.color);
     },
     transferToRgb(n, start) {
       return parseInt(n.substr(start, 2), 16) / 255;
@@ -208,9 +207,10 @@ export default {
       });
     },
     async modifyPDF() {
-      const helveticaFont = await v_pdfDoc.embedFont(StandardFonts.Helvetica);
-
-      const pages = v_pdfDoc.getPages();
+      const _file = await this.getReaderFile();
+      const pdfDoc = await PDFDocument.load(_file);
+      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const pages = pdfDoc.getPages();
 
       const { r, g, b } = this.original.color;
       const drawOption = {
@@ -226,14 +226,14 @@ export default {
         item.drawText(this.waterprintText, drawOption);
       });
 
-      this.pdfBytes = await v_pdfDoc.save();
+      this.pdfBytes = await pdfDoc.save();
 
       const bytes = new Uint8Array(this.pdfBytes);
       const blob = new Blob([bytes], { type: "application/pdf" });
       const docUrl = URL.createObjectURL(blob);
       this.$refs.pdfView.src = docUrl;
 
-      console.log("pdfBytes", this.pdfBytes);
+    //   console.log("pdfBytes", this.pdfBytes);
       this.loadingPdf = true;
     },
   },

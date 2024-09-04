@@ -1,5 +1,5 @@
 {
-  "name": "test_waterprint",
+  "name": "pdf_waterprint",
   "version": "0.1.0",
   "private": true,
   "scripts": {
