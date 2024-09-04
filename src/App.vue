@@ -136,6 +136,8 @@
 
 <script>
 import { degrees, PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+
 let v_getFile;
 
 export default {
@@ -151,7 +153,7 @@ export default {
         xMax: 10,
         yMax: 10,
       },
-      waterprintText: "waterprint waterprint waterprint",
+      waterprintText: "waterprint 浮水印 waterprint 浮水印",
       textSize: 50,
       xPosition: 0,
       yPosition: 0,
@@ -209,7 +211,13 @@ export default {
     async modifyPDF() {
       const _file = await this.getReaderFile();
       const pdfDoc = await PDFDocument.load(_file);
-      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      //   const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      //custom font
+      pdfDoc.registerFontkit(fontkit);
+      const _publicPath = process.env.NODE_ENV === "production" ? "/pdf_waterprint" : "";
+      const customFont = await fetch(`${_publicPath}/font/NotoSansTC.otf`).then((res) => res.arrayBuffer());
+      const helveticaFont = await pdfDoc.embedFont(customFont);
+
       const pages = pdfDoc.getPages();
 
       const { r, g, b } = this.original.color;
