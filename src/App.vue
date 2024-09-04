@@ -143,7 +143,7 @@ export default {
   data() {
     return {
       original: {
-        name: "test",
+        name: "未上傳檔案",
         width: 0,
         height: 0,
         color: { r: 1, g: 0, b: 0 },
@@ -180,7 +180,7 @@ export default {
       this.original.totalPages = pages.length;
       this.original.xMax = Math.ceil(width);
       this.original.yMax = Math.ceil(height);
-        console.log(this.original);
+      console.log(this.original);
       this.getFileLoading = false;
     },
     getColor() {
@@ -233,7 +233,7 @@ export default {
       const docUrl = URL.createObjectURL(blob);
       this.$refs.pdfView.src = docUrl;
 
-    //   console.log("pdfBytes", this.pdfBytes);
+      //   console.log("pdfBytes", this.pdfBytes);
       this.loadingPdf = true;
     },
   },
@@ -266,22 +266,38 @@ h1 {
     overflow-y: unset;
   }
   .card {
+    position: relative;
     text-align: left;
     padding: 0px 14px 16px 14px;
     margin: 16px 0px;
     border-radius: 10px;
     box-shadow: #949da421 0px 6px 12px;
+    overflow: hidden;
     &.bg_1 {
-      background: #fff9e8;
+      background: #fff7d0;
     }
     &.bg_2 {
-      background: #ffeecf;
+      background: #ffe8bd;
     }
     &.bg_3 {
-      background: #ffe1b9;
+      background: #ffd9ad;
+    }
+    &::after {
+      position: absolute;
+      content: "";
+      width: 300px;
+      height: 120%;
+      background: #ffffff69;
+      border-radius: 99rem;
+      top: -40%;
+      left: -80px;
+      filter: blur(60px);
+      z-index: 0;
     }
   }
   .content {
+    position: relative;
+    z-index: 5;
     .row {
       display: flex;
       padding: 4px 0px;
@@ -328,29 +344,31 @@ h1 {
   display: inline-block;
   width: 105px;
   vertical-align: middle;
+  z-index: 5;
   .step {
     text-align: center;
     display: inline-block;
     font-size: 95px;
-    color: #ff9e6b;
-    opacity: 0.14;
+    color: #ff9f6b3a;
     font-weight: 900;
     font-family: Helvetica, Arial, sans-serif;
   }
   .icon {
     position: absolute;
     top: 25px;
-    right: 12px;
+    right: 10px;
     display: inline-block;
-    color: #ff884a;
+    color: #ff823e;
     font-size: 52px;
     opacity: 0.6;
   }
 }
 .card_title {
+  position: relative;
   display: inline-block;
   text-align: left;
   vertical-align: middle;
+  z-index: 5;
   h2 {
     color: #925e47;
     font-size: 24px;
