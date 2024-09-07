@@ -1,5 +1,8 @@
 <template>
   <div id="app">
+    
+    <AuthorInfo/>
+
     <div class="left_side">
       <h1>PDF浮水印工具</h1>
 
@@ -94,6 +97,16 @@
             />
           </div>
           <div class="row">
+            <span>不透明度：{{ opacity }}%</span>
+            <input
+              type="range"
+              v-model="opacity"
+              step="1"
+              min="1"
+              max="100"
+            />
+          </div>
+          <div class="row">
             <span class="bold">起始位置 |</span>
             <span>水平(x軸)：</span>
             <input
@@ -135,6 +148,7 @@
 </template>
 
 <script>
+import AuthorInfo from "@/components/AuthorInfo.vue";
 import { degrees, PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 
@@ -143,6 +157,7 @@ let v_fontBytes;
 
 export default {
   name: "App",
+  components:{AuthorInfo},
   data() {
     return {
       original: {
@@ -158,6 +173,7 @@ export default {
       textSize: 50,
       xPosition: 0,
       yPosition: 0,
+      opacity: 100,
       rotateDegree: 10,
       pickColor: "#ff0000",
       pdfBytes: null,
@@ -165,10 +181,12 @@ export default {
       loadingPdf: false,
     };
   },
-  async created(){
-    const _publicPath = process.env.NODE_ENV === "production" ? "/pdf_waterprint" : "";
-    v_fontBytes = await fetch(`${_publicPath}/font/NotoSansTC.otf`).then((res) => res.arrayBuffer());
-
+  async created() {
+    const _publicPath =
+      process.env.NODE_ENV === "production" ? "/pdf_waterprint" : "";
+    v_fontBytes = await fetch(`${_publicPath}/font/NotoSansTC.otf`).then(
+      (res) => res.arrayBuffer()
+    );
   },
   methods: {
     async getFile(e) {
@@ -231,6 +249,7 @@ export default {
         size: this.textSize,
         font: customFont,
         color: rgb(r, g, b),
+        opacity: this.opacity/100,
         rotate: degrees(this.rotateDegree),
       };
       //增加為每一頁都要同樣的浮水印
