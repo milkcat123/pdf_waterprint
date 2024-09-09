@@ -2,11 +2,9 @@
   <div id="app">
     <AuthorInfo />
 
-    <Loading
-      :is-full-page="true"
-      :active="reloading"
-      :z-index="10"
-    >...製作中，請稍後...</Loading>
+    <Loading :is-full-page="true" :active="reloading" :z-index="10"
+      >...製作中，請稍後...</Loading
+    >
 
     <div class="left_side">
       <h1>PDF浮水印工具</h1>
@@ -144,11 +142,7 @@
               max="120"
             />
             <span>顏色：</span>
-            <input
-              type="color"
-              v-model="pickColor"
-              @change="getColor()"
-            />
+            <input type="color" v-model="pickColor" @change="getColor()" />
             <span>旋轉角度：</span>
             <input
               type="number"
@@ -161,13 +155,7 @@
           </div>
           <div class="row">
             <span>不透明度：{{ opacity }}%</span>
-            <input
-              type="range"
-              v-model="opacity"
-              step="1"
-              min="1"
-              max="100"
-            />
+            <input type="range" v-model="opacity" step="1" min="1" max="100" />
           </div>
           <div class="row">
             <span class="bold">起始位置 |</span>
@@ -353,7 +341,10 @@ export default {
       const _y =
         this.nowOption === "fullPage" ? this.original.height : this.yPosition;
       const _size = this.textSize;
-      const _lineHeight = this.lineHeight[this.nowLineHeight];
+      const _lineHeight =
+        this.nowOption === "fullPage"
+          ? this.lineHeight[this.nowLineHeight]
+          : 1.2;
       const _rotate = this.nowOption === "fullPage" ? 0 : this.rotateDegree;
       const _eh =
         this.nowOption === "fullPage" ? -_size : (textGroup.length * _size) / 2;
