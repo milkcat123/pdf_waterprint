@@ -118,6 +118,26 @@
               />
             </div>
           </template>
+          <template v-if="nowOption === 'fullPage'">
+            <div class="row option">
+              <span>密度：</span>
+              <template v-for="(item, index) in Object.keys(lineHeight)">
+                <div class="option_item">
+                  <input
+                    type="radio"
+                    name="lineheight"
+                    :value="item"
+                    :id="item"
+                    :checked="index === 1"
+                    @click="nowLineHeight = item"
+                  />
+                  <label :for="item">{{
+                    index === 0 ? "鬆散" : index === 1 ? "一般" : "密集"
+                  }}</label>
+                </div>
+              </template>
+            </div>
+          </template>
           <div class="row">
             <span>字體大小：</span>
             <input
@@ -240,8 +260,8 @@ export default {
       opacity: 100,
       rotateDegree: 10,
       lineHeight: {
-        loose: 1.8,
-        normal: 1.3,
+        loose: 2,
+        normal: 1.5,
         tight: 1,
       },
       nowLineHeight: "normal",
