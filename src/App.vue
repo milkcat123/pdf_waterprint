@@ -1,7 +1,13 @@
 <template>
   <div id="app">
-    
-    <AuthorInfo/>
+    <AuthorInfo />
+
+    <Loading
+      :is-full-page="true"
+      :active="reloading"
+      :z-index="10"
+      :color="'#9f8c5b'"
+    ></Loading>
 
     <div class="left_side">
       <h1>PDF浮水印工具</h1>
@@ -55,7 +61,7 @@
         </div>
       </div>
 
-      <div class="card bg_3">
+      <div class="card bg_3" v-show="!getFileLoading">
         <div class="wrap_step">
           <div class="step">3</div>
           <div class="icon">
@@ -67,15 +73,51 @@
           <div class="sub">waterprint setting</div>
         </div>
         <div class="content">
-          <div class="row">
-            <span>浮水印文字：</span>
-            <input
-              type="text"
-              v-model="waterprintText"
-              placeholder="輸入浮水印文字"
-              maxlength="100"
-            />
+          <div class="row option">
+            <template v-for="(item, index) in Object.keys(lineOption)">
+              <div class="option_item">
+                <input
+                  type="radio"
+                  name="option"
+                  :id="item"
+                  :value="item"
+                  :checked="index === 0"
+                  @click="nowOption = item"
+                  :disabled="reloading"
+                />
+                <label :for="item">{{ lineOption[item] }}</label>
+              </div>
+            </template>
           </div>
+          <template v-if="nowOption === 'multiLine'">
+            <template
+              v-for="(item, index) in Object.keys(multiLineText)"
+              :key="index"
+            >
+              <div class="row">
+                <span>{{ index === 0 ? "浮水印文字：" : "" }}</span>
+                <input
+                  type="text"
+                  v-model="multiLineText[item]"
+                  placeholder="輸入浮水印文字"
+                  maxlength="100"
+                  :disabled="reloading"
+                />
+              </div>
+            </template>
+          </template>
+          <template v-else>
+            <div class="row">
+              <span>浮水印文字：</span>
+              <input
+                type="text"
+                v-model="waterprintText"
+                placeholder="輸入浮水印文字"
+                maxlength="100"
+                :disabled="reloading"
+              />
+            </div>
+          </template>
           <div class="row">
             <span>字體大小：</span>
             <input
@@ -84,9 +126,15 @@
               step="1"
               min="10"
               max="120"
+              :disabled="reloading"
             />
             <span>顏色：</span>
-            <input type="color" v-model="pickColor" @change="getColor()" />
+            <input
+              type="color"
+              v-model="pickColor"
+              @change="getColor()"
+              :disabled="reloading"
+            />
             <span>旋轉角度：</span>
             <input
               type="number"
@@ -94,6 +142,7 @@
               step="1"
               min="-180"
               max="180"
+              :disabled="nowOption === 'fullPage'"
             />
           </div>
           <div class="row">
@@ -104,6 +153,7 @@
               step="1"
               min="1"
               max="100"
+              :disabled="reloading"
             />
           </div>
           <div class="row">
@@ -115,6 +165,7 @@
               step="1"
               min="0"
               :max="original.xMax"
+              :disabled="nowOption === 'fullPage'"
             />
             <span>垂直(y軸)：</span>
             <input
@@ -123,6 +174,7 @@
               step="1"
               min="0"
               :max="original.yMax"
+              :disabled="nowOption === 'fullPage'"
             />
           </div>
         </div>
@@ -157,7 +209,7 @@ let v_fontBytes;
 
 export default {
   name: "App",
-  components:{AuthorInfo},
+  components: { AuthorInfo },
   data() {
     return {
       original: {
@@ -169,16 +221,35 @@ export default {
         xMax: 10,
         yMax: 10,
       },
+      lineOption: {
+        oneLine: "單行",
+        fullPage: "滿版",
+        multiLine: "多行",
+      },
+      nowOption: "oneLine",
       waterprintText: "waterprint 浮水印 waterprint 浮水印",
+      multiLineText: {
+        0: "000",
+        1: "111",
+        2: "222",
+        3: "333",
+      },
       textSize: 50,
       xPosition: 0,
       yPosition: 0,
       opacity: 100,
       rotateDegree: 10,
+      lineHeight: {
+        loose: 1.8,
+        normal: 1.3,
+        tight: 1,
+      },
+      nowLineHeight: "normal",
       pickColor: "#ff0000",
       pdfBytes: null,
       getFileLoading: true,
       loadingPdf: false,
+      reloading: false,
     };
   },
   async created() {
@@ -187,6 +258,25 @@ export default {
     v_fontBytes = await fetch(`${_publicPath}/font/NotoSansTC.otf`).then(
       (res) => res.arrayBuffer()
     );
+  },
+  computed: {
+    getTextGroup: function () {
+      if (this.nowOption === "multiLine") {
+        let _tg = Object.values(this.multiLineText).filter((it) => it !== "");
+        return [..._tg];
+      } else if (this.nowOption === "fullPage") {
+        let _lh = this.lineHeight[this.nowLineHeight] * this.textSize;
+        let _num = Math.ceil(this.original.height / _lh);
+        console.log("lh", _num);
+        let result = [];
+        for (let i = 0; i < _num; i++) {
+          result.push(this.waterprintText);
+        }
+        return result;
+      } else {
+        return [this.waterprintText];
+      }
+    },
   },
   methods: {
     async getFile(e) {
@@ -233,6 +323,7 @@ export default {
       });
     },
     async modifyPDF() {
+      this.reloading = true;
       const _file = await this.getReaderFile();
       const pdfDoc = await PDFDocument.load(_file);
       //   const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -242,19 +333,32 @@ export default {
 
       const pages = pdfDoc.getPages();
 
+      let textGroup = this.getTextGroup;
+      console.log("textGroup", textGroup);
       const { r, g, b } = this.original.color;
-      const drawOption = {
-        x: this.xPosition,
-        y: this.yPosition,
-        size: this.textSize,
-        font: customFont,
-        color: rgb(r, g, b),
-        opacity: this.opacity/100,
-        rotate: degrees(this.rotateDegree),
-      };
+      const _x = this.xPosition;
+      const _y =
+        this.nowOption === "fullPage" ? this.original.height : this.yPosition;
+      const _size = this.textSize;
+      const _lineHeight = this.lineHeight[this.nowLineHeight];
+      const _rotate = this.nowOption === "fullPage" ? 0 : this.rotateDegree;
+      const _eh =
+        this.nowOption === "fullPage" ? -_size : (textGroup.length * _size) / 2;
+
       //增加為每一頁都要同樣的浮水印
       pages.forEach((item) => {
-        item.drawText(this.waterprintText, drawOption);
+        textGroup.forEach((_t, _i) => {
+          const drawOption = {
+            x: _x,
+            y: _y - _size * _lineHeight * _i + _eh,
+            size: _size,
+            font: customFont,
+            color: rgb(r, g, b),
+            opacity: this.opacity / 100,
+            rotate: degrees(_rotate),
+          };
+          item.drawText(_t, drawOption);
+        });
       });
 
       this.pdfBytes = await pdfDoc.save();
@@ -266,8 +370,10 @@ export default {
 
       //   console.log("pdfBytes", this.pdfBytes);
       this.loadingPdf = true;
+      this.reloading = false;
     },
   },
+  watch: {},
 };
 </script>
 
@@ -336,6 +442,15 @@ h1 {
       @include portrait {
         flex-wrap: wrap;
       }
+      &.option {
+        .option_item {
+          width: 100px;
+        }
+        input {
+          width: 20px;
+          margin: 0px;
+        }
+      }
       > * {
         color: #636363;
         white-space: nowrap;
@@ -360,6 +475,9 @@ h1 {
         padding: 0px 4px;
         line-height: 1.5;
         border: #ff823ec4 1px solid;
+        &:disabled {
+          background: #cfcfcf;
+        }
         @include portrait {
           margin: 0px;
         }
