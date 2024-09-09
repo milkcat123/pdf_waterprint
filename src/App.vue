@@ -6,8 +6,7 @@
       :is-full-page="true"
       :active="reloading"
       :z-index="10"
-      :color="'#9f8c5b'"
-    ></Loading>
+    >...製作中，請稍後...</Loading>
 
     <div class="left_side">
       <h1>PDF浮水印工具</h1>
@@ -83,7 +82,6 @@
                   :value="item"
                   :checked="index === 0"
                   @click="nowOption = item"
-                  :disabled="reloading"
                 />
                 <label :for="item">{{ lineOption[item] }}</label>
               </div>
@@ -101,7 +99,6 @@
                   v-model="multiLineText[item]"
                   placeholder="輸入浮水印文字"
                   maxlength="100"
-                  :disabled="reloading"
                 />
               </div>
             </template>
@@ -114,7 +111,6 @@
                 v-model="waterprintText"
                 placeholder="輸入浮水印文字"
                 maxlength="100"
-                :disabled="reloading"
               />
             </div>
           </template>
@@ -146,14 +142,12 @@
               step="1"
               min="10"
               max="120"
-              :disabled="reloading"
             />
             <span>顏色：</span>
             <input
               type="color"
               v-model="pickColor"
               @change="getColor()"
-              :disabled="reloading"
             />
             <span>旋轉角度：</span>
             <input
@@ -173,7 +167,6 @@
               step="1"
               min="1"
               max="100"
-              :disabled="reloading"
             />
           </div>
           <div class="row">
